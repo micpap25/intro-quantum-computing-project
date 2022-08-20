@@ -1,5 +1,6 @@
 # %%
-from qiskit import QuantumCircuit
+import numpy as np
+from qiskit import QuantumCircuit, QuantumRegister
 from qiskit.providers.aer import AerSimulator
 # %%
 # !!! Function taken from the
@@ -22,31 +23,31 @@ def display_unitary(qc, prefix=""):
     unitary = sim.run(qc).result().get_unitary()
     display(array_to_latex(unitary, prefix=prefix))
 # %%
-# !!! My original code
+# !!! My code
+# Information gathered from
+# http://nbviewer.org/github/diemilio/grovers-algo/blob/master/Grovers_n-qubit_Oracle.ipynb
 # Set up the string
-STRING = "000"
+STRING = "1111"
 LENGTH = len(STRING)
+# %%
+# Create a multi-control z gate
+multi_control_z = QuantumCircuit(name="mcz")
+control_register = QuantumRegister(LENGTH - 1)
+multi_control_z.add_register(control_register)
+target_register = QuantumRegister(1)
+multi_control_z.add_register(target_register)
+multi_control_z.mcrz(np.pi,control_register,target_register)
 # %%
 # Create the oracle circuit
 oracle = QuantumCircuit(LENGTH)
-# %%
-# 
-if STRING[-1] == "0":
-    oracle.x(0)
-for i in range(1, LENGTH):
-    if (STRING[-i - 1] == "1"):
+for i in range(LENGTH):
+    if (STRING[-i - 1] == "0"):
         oracle.x(i)
-    oracle.cx(i-1, i)
-oracle.cz(LENGTH - 1, 0)
-for i in range(LENGTH - 1, 0, -1):
-    oracle.cx(i-1, i)
-    if (STRING[-i - 1] == "1"):
+oracle.append(multi_control_z, range(LENGTH))
+for i in range(LENGTH):
+    if (STRING[-i - 1] == "0"):
         oracle.x(i)
-if STRING[-1] == "0":
-    oracle.x(0)
 oracle.draw()
 # %%
 # !!!! All following code to run the oracle circuit
 display_unitary(oracle, "U_\\text{oracle}=")
-
-# %%
